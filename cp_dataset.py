@@ -27,7 +27,7 @@ class CPDataset(data.Dataset):
         self.data_path = osp.join(opt.dataroot, opt.datamode)
         self.transform = transforms.Compose([  \
                 transforms.ToTensor(),   \
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+                transforms.Normalize((0.5,), (0.5,))])
         
         # load data list
         im_names = []
@@ -53,8 +53,11 @@ class CPDataset(data.Dataset):
             c = Image.open(osp.join(self.data_path, 'cloth', c_name))
             cm = Image.open(osp.join(self.data_path, 'cloth-mask', c_name))
         else:
-            c = Image.open(osp.join(self.data_path, 'warp-cloth', c_name))
-            cm = Image.open(osp.join(self.data_path, 'warp-mask', c_name))
+            # keep warp data in result_dir for each experiment and load from there
+            #base_name = self.opt.name + '_' + osp.basename(self.opt.checkpoint)
+            warp_dir = osp.join(self.opt.result_dir, self.opt.warp_dir, self.opt.datamode)
+            c = Image.open(osp.join(warp_dir, 'warp-cloth', c_name))
+            cm = Image.open(osp.join(warp_dir, 'warp-mask', c_name))
      
         c = self.transform(c)  # [-1,1]
         cm_array = np.array(cm)

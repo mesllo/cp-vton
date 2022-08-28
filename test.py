@@ -9,8 +9,12 @@ import time
 from cp_dataset import CPDataset, CPDataLoader
 from networks import GMM, UnetGenerator, load_checkpoint
 
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 from visualization import board_add_image, board_add_images, save_images
+
+# mesllo
+import wandb
+from torchinfo import summary
 
 
 def get_opt():
@@ -30,9 +34,17 @@ def get_opt():
     parser.add_argument("--grid_size", type=int, default = 5)
     parser.add_argument('--tensorboard_dir', type=str, default='tensorboard', help='save tensorboard infos')
     parser.add_argument('--result_dir', type=str, default='result', help='save result infos')
+    parser.add_argument('--warp_dir', type=str, default='', help='warp output')
     parser.add_argument('--checkpoint', type=str, default='', help='model checkpoint for test')
     parser.add_argument("--display_count", type=int, default = 1)
     parser.add_argument("--shuffle", action='store_true', help='shuffle input data')
+
+    # mesllo
+    parser.add_argument('--rel', type=str, default='1.0', help='specify which relevance level we used')
+    parser.add_argument('--fin', type=str, default='SHALLOW', help='specify which finetuning config we used')
+    parser.add_argument('--plf', type=str, default='1TO5', help='specify which plf layers we used')
+    parser.add_argument('--pln', type=str, default='vgg19', help='specify which pln we used')
+    parser.add_argument('--dataset', type=str, default='viton_quick', help='specify which dataset we used for vton')
 
     opt = parser.parse_args()
     return opt
@@ -41,7 +53,20 @@ def test_gmm(opt, test_loader, model, board):
     model.cuda()
     model.eval()
 
-    base_name = os.path.basename(opt.checkpoint)
+    ### WANDB STUFF FOR EXP TRACKING
+    wandb.init(
+        project="CP-VTON - Finetuned PLN",
+        config = {
+            "stage": opt.stage,
+            "mode": opt.datamode,
+            "dataset": opt.dataset
+        }
+    )
+
+    wandb.run.name = opt.name
+    ###
+
+    base_name = opt.name + '_' + os.path.basename(opt.checkpoint)
     save_dir = os.path.join(opt.result_dir, base_name, opt.datamode)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -63,7 +88,7 @@ def test_gmm(opt, test_loader, model, board):
         agnostic = inputs['agnostic'].cuda()
         c = inputs['cloth'].cuda()
         cm = inputs['cloth_mask'].cuda()
-        im_c =  inputs['parse_cloth'].cuda()
+        im_c = inputs['parse_cloth'].cuda()
         im_g = inputs['grid_image'].cuda()
             
         grid, theta = model(agnostic, c)
@@ -71,26 +96,61 @@ def test_gmm(opt, test_loader, model, board):
         warped_mask = F.grid_sample(cm, grid, padding_mode='zeros')
         warped_grid = F.grid_sample(im_g, grid, padding_mode='zeros')
 
-        visuals = [ [im_h, shape, im_pose], 
-                   [c, warped_cloth, im_c], 
+        visuals = [ [im_h, shape, im_pose],
+                   [c, warped_cloth, im_c],
                    [warped_grid, (warped_cloth+im)*0.5, im]]
         
         save_images(warped_cloth, c_names, warp_cloth_dir) 
         save_images(warped_mask*2-1, c_names, warp_mask_dir) 
 
         if (step+1) % opt.display_count == 0:
-            board_add_images(board, 'combine', visuals, step+1)
+            #board_add_images(board, 'combine', visuals, step+1)
             t = time.time() - iter_start_time
             print('step: %8d, time: %.3f' % (step+1, t), flush=True)
+
+            visuals_new = []
+            for i, images in enumerate(visuals):
+                row = []
+                for j, image in enumerate(images):
+                    img = wandb.Image(image)
+                    row.append(img)
+                visuals_new.append(row)
+
+            # log training loss on wandb for exp tracking
+            wandb.log({
+                "step": step+1,
+                "epoch": ((step+1) // len(test_loader.dataset)) + 1,
+                "warping1": visuals_new[0],
+                "warping2": visuals_new[1],
+                "warping3": visuals_new[2]
+            })
         
 
 
 def test_tom(opt, test_loader, model, board):
     model.cuda()
     model.eval()
+
+    ### WANDB STUFF FOR EXP TRACKING
+    wandb.init(
+        project="CP-VTON - Finetuned PLN",
+        config = {
+            "stage": opt.stage,
+            "mode": opt.datamode,
+            "relevance_level": opt.rel,
+            "finetune_config": opt.fin,
+            "plf_layers": opt.plf,
+            "pln": opt.pln,
+            "dataset": opt.dataset
+        }
+    )
+
+    wandb.run.name = opt.name
+    ###
     
-    base_name = os.path.basename(opt.checkpoint)
-    save_dir = os.path.join(opt.result_dir, base_name, opt.datamode)
+    base_name = opt.name + '_' + os.path.basename(opt.checkpoint)
+    #save_dir = os.path.join(opt.result_dir, base_name, opt.datamode)
+    save_dir = os.path.join(opt.result_dir, base_name)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     try_on_dir = os.path.join(save_dir, 'try-on')
@@ -122,16 +182,35 @@ def test_tom(opt, test_loader, model, board):
             
         save_images(p_tryon, im_names, try_on_dir) 
         if (step+1) % opt.display_count == 0:
-            board_add_images(board, 'combine', visuals, step+1)
+            #board_add_images(board, 'combine', visuals, step+1)
             t = time.time() - iter_start_time
             print('step: %8d, time: %.3f' % (step+1, t), flush=True)
+
+            visuals_new = []
+            for i, images in enumerate(visuals):
+                row = []
+                for j, image in enumerate(images):
+                    img = wandb.Image(image)
+                    row.append(img)
+                visuals_new.append(row)
+
+            # log training loss on wandb for exp tracking
+            wandb.log({
+                "step": step+1,
+                "epoch": ((step+1) // len(test_loader.dataset)) + 1,
+                "tryon1": visuals_new[0],
+                "tryon2": visuals_new[1],
+                "tryon3": visuals_new[2],
+                "model_suffix": os.path.basename(opt.checkpoint),
+            })
+
 
 
 def main():
     opt = get_opt()
     print(opt)
     print("Start to test stage: %s, named: %s!" % (opt.stage, opt.name))
-   
+    
     # create dataset 
     train_dataset = CPDataset(opt)
 
@@ -141,8 +220,9 @@ def main():
     # visualization
     if not os.path.exists(opt.tensorboard_dir):
         os.makedirs(opt.tensorboard_dir)
-    board = SummaryWriter(log_dir = os.path.join(opt.tensorboard_dir, opt.name))
-   
+    #board = SummaryWriter(log_dir = os.path.join(opt.tensorboard_dir, opt.name))
+    board = None
+    
     # create model & train
     if opt.stage == 'GMM':
         model = GMM(opt)

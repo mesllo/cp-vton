@@ -7,6 +7,9 @@ import os
 
 import numpy as np
 
+# mesllo
+import wandb
+
 def weights_init_normal(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
@@ -121,7 +124,7 @@ class FeatureRegression(nn.Module):
 
     def forward(self, x):
         x = self.conv(x)
-        x = x.view(x.size(0), -1)
+        x = x.reshape(x.size(0), -1)
         x = self.linear(x)
         x = self.tanh(x)
         return x
@@ -350,27 +353,70 @@ class UnetSkipConnectionBlock(nn.Module):
         else:
             return torch.cat([x, self.model(x)], 1)
 
-class Vgg19(nn.Module):
-    def __init__(self, requires_grad=False):
-        super(Vgg19, self).__init__()
-        vgg_pretrained_features = models.vgg19(pretrained=True).features
+class Vgg19_default(nn.Module):
+    def __init__(self, opt, requires_grad=False):
+        super(Vgg19_default, self).__init__()
+
+        print('--- USING DEFAULT LAYER CHOICES FOR PERCEPTUAL LOSS ---')        
+        
+        # load pln with finetuned vgg for perceptual loss if need be
+        #vgg_pretrained_features = models.vgg19(pretrained=True).features
+        pln = None
+        if opt.pln == 'vgg19_bn':
+            pln = models.vgg19_bn(pretrained=opt.pretrained)
+        elif opt.pln == 'vgg19':
+            pln = models.vgg19(pretrained=opt.pretrained)
+        
+        print('USING %s' %(opt.pln))
+        
+        # using random init pln
+        if not opt.pretrained:
+            print('USING RANDOMLY INITIALIZED PLN')
+
+        # using default pretrained or finetuned pln?
+        if opt.pretrained and opt.pln_path is not None:
+            print('USING FINETUNED PLN')
+            num_ftrs = pln.classifier[6].in_features
+            pln.classifier[6] = nn.Linear(num_ftrs, 49)
+            pln.load_state_dict(torch.load(os.path.join(opt.checkpoint_dir, opt.pln_path))['state_dict'])
+        elif opt.pretrained:
+            print('USING DEFAULT PRETRAINED PLN')
+
+        vgg_pretrained_features = pln.features
+
         self.slice1 = torch.nn.Sequential()
         self.slice2 = torch.nn.Sequential()
         self.slice3 = torch.nn.Sequential()
         self.slice4 = torch.nn.Sequential()
         self.slice5 = torch.nn.Sequential()
+
+        print('--- TAKING UP TO PLN LAYER 1 (SLICE 1) ---')
         for x in range(2):
+            print(vgg_pretrained_features[x])
             self.slice1.add_module(str(x), vgg_pretrained_features[x])
+        print('--- TAKING UP TO PLN LAYER 2 to 3 (SLICE 2) ---')
         for x in range(2, 7):
+            print(vgg_pretrained_features[x])
             self.slice2.add_module(str(x), vgg_pretrained_features[x])
+        print('--- TAKING UP TO PLN LAYER 4 to 5 (SLICE 3) ---')
         for x in range(7, 12):
+            print(vgg_pretrained_features[x])
             self.slice3.add_module(str(x), vgg_pretrained_features[x])
+        print('--- TAKING UP TO PLN LAYER 6 to 9 (SLICE 4) ---')
         for x in range(12, 21):
+            print(vgg_pretrained_features[x])
             self.slice4.add_module(str(x), vgg_pretrained_features[x])
+        print('--- TAKING UP TO PLN LAYER 10 to 13 (SLICE 5) ---')
         for x in range(21, 30):
+            print(vgg_pretrained_features[x])
             self.slice5.add_module(str(x), vgg_pretrained_features[x])
+        
         if not requires_grad:
-            for param in self.parameters():
+            print('------------------ PLN PARAMETERS ONLY ------------------')
+            count = 0
+            for name, param in self.named_parameters():
+                print(count, name)
+                count = count + 1
                 param.requires_grad = False
 
     def forward(self, X):
@@ -380,12 +426,143 @@ class Vgg19(nn.Module):
         h_relu4 = self.slice4(h_relu3)
         h_relu5 = self.slice5(h_relu4)
         out = [h_relu1, h_relu2, h_relu3, h_relu4, h_relu5]
+        #print('printing relu1')
+        #print(h_relu1)
+        #print('printing relu2')
+        #print(h_relu2)
+        #print('printing relu3')
+        #print(h_relu3)
+        #print('printing relu4')
+        #print(h_relu4)
+        #print('printing relu5')
+        #print(h_relu5)
         return out
 
-class VGGLoss(nn.Module):
-    def __init__(self, layids = None):
-        super(VGGLoss, self).__init__()
-        self.vgg = Vgg19()
+class Vgg19(nn.Module):
+    def __init__(self, opt, requires_grad=False):
+        super(Vgg19, self).__init__()
+        
+        print('USING %s' %(opt.pln))
+        print('USING CUSTOM LAYER CHOICES FOR PERCEPTUAL LOSS')
+
+        # load pln with finetuned vgg for perceptual loss if need be
+        #vgg_pretrained_features = models.vgg19(pretrained=True).features
+        pln = None
+        if opt.pln == 'vgg19_bn':
+            pln = models.vgg19_bn(pretrained=opt.pretrained)
+        elif opt.pln == 'vgg19':
+            pln = models.vgg19(pretrained=opt.pretrained)
+        elif opt.pln == 'efficientnet_b3':
+            pln = models.efficientnet_b3(pretrained=opt.pretrained)
+        
+        # using random init pln
+        if not opt.pretrained:
+            print('USING RANDOMLY INITIALIZED PLN')
+
+        # using default pretrained or finetuned pln?
+        if opt.pretrained and opt.pln_path is not None:
+            print('USING FINETUNED PLN')
+            num_ftrs = pln.classifier[6].in_features
+            pln.classifier[6] = nn.Linear(num_ftrs, 49)
+            pln.load_state_dict(torch.load(os.path.join(opt.checkpoint_dir, opt.pln_path))['state_dict'])
+        elif opt.pretrained:
+            print('USING DEFAULT PRETRAINED PLN')
+        
+        vgg_pretrained_features = pln.features
+
+        """
+        print('NAMED PARAMETERS')
+        count = 0
+        for name, param in pln.named_parameters():
+            print(count)
+            print(name, param.size())
+            count = count + 1
+            param.requires_grad = False
+
+        print('FEATURES')
+        for i, param in enumerate(pln.features):
+            print(i, param)
+            param.requires_grad = False
+        """
+
+        self.shallow = torch.nn.Sequential()
+        self.mid = torch.nn.Sequential()
+        self.deep = torch.nn.Sequential()
+
+        if opt.pln == 'vgg19_bn':
+            print('--- TAKING UP TO PLN LAYER 5 (SHALLOW) ---')
+            for x in range(17):
+                print(x, vgg_pretrained_features[x])
+                self.shallow.add_module(str(x), vgg_pretrained_features[x])
+            print('--- TAKING PLN LAYERS 6 to 11 (MID) ---')
+            for x in range(17, 36):
+                print(x, vgg_pretrained_features[x])
+                self.mid.add_module(str(x), vgg_pretrained_features[x])
+            print('--- TAKING PLN LAYERS 12 to 16 (DEEP) ---')
+            for x in range(36, 52):
+                print(x, vgg_pretrained_features[x])
+                self.deep.add_module(str(x), vgg_pretrained_features[x])
+        elif opt.pln == 'vgg19':
+            print('--- TAKING UP TO PLN LAYER 5 (SHALLOW) ---')
+            for x in range(12):
+                print(x, vgg_pretrained_features[x])
+                self.shallow.add_module(str(x), vgg_pretrained_features[x])
+            print('--- TAKING PLN LAYERS 6 to 11 (MID) ---')
+            for x in range(12, 25):
+                print(x, vgg_pretrained_features[x])
+                self.mid.add_module(str(x), vgg_pretrained_features[x])
+            print('--- TAKING PLN LAYERS 12 to 16 (DEEP) ---')
+            for x in range(25, 37):
+                print(x, vgg_pretrained_features[x])
+                self.deep.add_module(str(x), vgg_pretrained_features[x])
+        elif opt.pln == 'efficientnet_b3':
+            print('--- TAKING UP TO PLN SEQUENTIAL LAYER 2 (SHALLOW) ---')
+            for x in range(3):
+                print(x, vgg_pretrained_features[x])
+                self.shallow.add_module(str(x), vgg_pretrained_features[x])
+            print('--- TAKING PLN SEQUENTIAL LAYERS 3 TO 5 (MID) ---')
+            for x in range(3, 6):
+                print(x, vgg_pretrained_features[x])
+                self.mid.add_module(str(x), vgg_pretrained_features[x])
+            print('--- TAKING PLN SEQUENTIAL LAYERS 6 TO 8 (DEEP) ---')
+            for x in range(6, 9):
+                print(x, vgg_pretrained_features[x])
+                self.deep.add_module(str(x), vgg_pretrained_features[x])
+        
+        if not requires_grad:
+            print('------------------ PLN PARAMETERS ONLY ------------------')
+            count = 0
+            for name, param in self.named_parameters():
+                print(count, name)
+                count = count + 1
+                param.requires_grad = False
+
+    def forward(self, X, opt):
+        out = []
+        if opt.plf_layers == 'SHALLOW':
+            h_relu_shallow = self.shallow(X)
+            out = [h_relu_shallow]
+        if opt.plf_layers == 'MID':
+            h_relu_shallow = self.shallow(X)
+            h_relu_mid = self.mid(h_relu_shallow)
+            out = [h_relu_mid]
+        if opt.plf_layers == 'DEEP':
+            h_relu_shallow = self.shallow(X)
+            h_relu_mid = self.mid(h_relu_shallow)
+            h_relu_deep = self.deep(h_relu_mid)
+            out = [h_relu_deep]
+        if opt.plf_layers == 'ALL':        
+            h_relu_shallow = self.shallow(X)
+            h_relu_mid = self.mid(h_relu_shallow)
+            h_relu_deep = self.deep(h_relu_mid)
+            out = [h_relu_shallow, h_relu_mid, h_relu_deep]        
+        return out
+
+class VGGLoss_default(nn.Module):
+    def __init__(self, opt, layids = None):
+        super(VGGLoss_default, self).__init__()
+
+        self.vgg = Vgg19_default(opt)        
         self.vgg.cuda()
         self.criterion = nn.L1Loss()
         self.weights = [1.0/32, 1.0/16, 1.0/8, 1.0/4, 1.0]
@@ -400,6 +577,37 @@ class VGGLoss(nn.Module):
             loss += self.weights[i] * self.criterion(x_vgg[i], y_vgg[i].detach())
         return loss
 
+class VGGLoss(nn.Module):
+    def __init__(self, opt, layids = None):
+        super(VGGLoss, self).__init__()
+
+        self.vgg = None
+        if opt.plf_layers == 'DEFAULT':
+            self.vgg = Vgg19_default(opt)
+        else:
+            self.vgg = Vgg19(opt)
+        
+        self.vgg.cuda()
+        self.criterion = nn.L1Loss()
+        self.weights = [1.0/32, 1.0/16, 1.0/8, 1.0/4, 1.0]
+        self.layids = layids
+
+    def forward(self, x, y, opt):
+        x_vgg, y_vgg = None, None
+
+        if opt.plf_layers == 'DEFAULT':
+            x_vgg, y_vgg = self.vgg(x), self.vgg(y)
+        else:
+            x_vgg, y_vgg = self.vgg(x, opt), self.vgg(y, opt)
+
+        loss = 0
+        if self.layids is None:
+            self.layids = list(range(len(x_vgg)))
+        #print(self.layids)
+        for i in self.layids:
+            loss += self.weights[i] * self.criterion(x_vgg[i], y_vgg[i].detach())
+        return loss
+        
 class GMM(nn.Module):
     """ Geometric Matching Module
     """
@@ -428,6 +636,10 @@ def save_checkpoint(model, save_path):
         os.makedirs(os.path.dirname(save_path))
 
     torch.save(model.cpu().state_dict(), save_path)
+
+    # save checkpoint to wandb
+    wandb.save(save_path)
+
     model.cuda()
 
 def load_checkpoint(model, checkpoint_path):
