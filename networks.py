@@ -558,6 +558,217 @@ class Vgg19(nn.Module):
             out = [h_relu_shallow, h_relu_mid, h_relu_deep]        
         return out
 
+class Vgg19_new(nn.Module):
+    def __init__(self, opt, requires_grad=False):
+        super(Vgg19_new, self).__init__()
+        
+        print('USING %s' %(opt.pln))
+        print('USING CUSTOM LAYER CHOICES FOR PERCEPTUAL LOSS')
+
+        # load pln with finetuned vgg for perceptual loss if need be
+        #vgg_pretrained_features = models.vgg19(pretrained=True).features
+        pln = None
+        if opt.pln == 'vgg19_bn':
+            pln = models.vgg19_bn(pretrained=opt.pretrained)
+        elif opt.pln == 'vgg19':
+            pln = models.vgg19(pretrained=opt.pretrained)
+        elif opt.pln == 'efficientnet_b3':
+            pln = models.efficientnet_b3(pretrained=opt.pretrained)
+        
+        # using random init pln
+        if not opt.pretrained:
+            print('USING RANDOMLY INITIALIZED PLN')
+
+        # using default pretrained or finetuned pln?
+        if opt.pretrained and opt.pln_path is not None:
+            print('USING FINETUNED PLN')
+            num_ftrs = pln.classifier[6].in_features
+            pln.classifier[6] = nn.Linear(num_ftrs, 49)
+            pln.load_state_dict(torch.load(os.path.join(opt.checkpoint_dir, opt.pln_path))['state_dict'])
+        elif opt.pretrained:
+            print('USING DEFAULT PRETRAINED PLN')
+        
+        vgg_pretrained_features = pln.features
+
+        """
+        print('NAMED PARAMETERS')
+        count = 0
+        for name, param in pln.named_parameters():
+            print(count)
+            print(name, param.size())
+            count = count + 1
+            param.requires_grad = False
+
+        print('FEATURES')
+        for i, param in enumerate(pln.features):
+            print(i, param)
+            param.requires_grad = False
+        """
+
+        self.shallow1 = torch.nn.Sequential()
+        self.shallow2 = torch.nn.Sequential()
+        self.shallow3 = torch.nn.Sequential()
+        self.shallow4 = torch.nn.Sequential()
+        self.shallow5 = torch.nn.Sequential()
+        self.mid1 = torch.nn.Sequential()
+        self.mid2 = torch.nn.Sequential()
+        self.mid3 = torch.nn.Sequential()
+        self.mid4 = torch.nn.Sequential()
+        self.mid5 = torch.nn.Sequential()
+        self.mid6 = torch.nn.Sequential()
+        self.deep1 = torch.nn.Sequential()
+        self.deep2 = torch.nn.Sequential()
+        self.deep3 = torch.nn.Sequential()
+        self.deep4 = torch.nn.Sequential()
+        self.deep5 = torch.nn.Sequential()
+
+        if opt.pln == 'vgg19_bn':
+            print('--- TAKING UP TO PLN LAYER 5 (SHALLOW) ---')
+            for x in range(17):
+                print(x, vgg_pretrained_features[x])
+                self.shallow.add_module(str(x), vgg_pretrained_features[x])
+            print('--- TAKING PLN LAYERS 6 to 11 (MID) ---')
+            for x in range(17, 36):
+                print(x, vgg_pretrained_features[x])
+                self.mid.add_module(str(x), vgg_pretrained_features[x])
+            print('--- TAKING PLN LAYERS 12 to 16 (DEEP) ---')
+            for x in range(36, 52):
+                print(x, vgg_pretrained_features[x])
+                self.deep.add_module(str(x), vgg_pretrained_features[x])
+        elif opt.pln == 'vgg19':
+            print('--- TAKING UP TO PLN LAYER 5 (SHALLOW) ---')
+            for x in range(2):
+                print(x, vgg_pretrained_features[x])
+                self.shallow1.add_module(str(x), vgg_pretrained_features[x])
+            for x in range(2, 4):
+                print(x, vgg_pretrained_features[x])
+                self.shallow2.add_module(str(x), vgg_pretrained_features[x])
+            for x in range(4, 7):
+                print(x, vgg_pretrained_features[x])
+                self.shallow3.add_module(str(x), vgg_pretrained_features[x])
+            for x in range(7, 9):
+                print(x, vgg_pretrained_features[x])
+                self.shallow4.add_module(str(x), vgg_pretrained_features[x])
+            for x in range(9, 12):
+                print(x, vgg_pretrained_features[x])
+                self.shallow5.add_module(str(x), vgg_pretrained_features[x])
+            print('--- TAKING PLN LAYERS 6 to 11 (MID) ---')
+            for x in range(12, 14):
+                print(x, vgg_pretrained_features[x])
+                self.mid1.add_module(str(x), vgg_pretrained_features[x])
+            for x in range(14, 16):
+                print(x, vgg_pretrained_features[x])
+                self.mid2.add_module(str(x), vgg_pretrained_features[x])
+            for x in range(16, 18):
+                print(x, vgg_pretrained_features[x])
+                self.mid3.add_module(str(x), vgg_pretrained_features[x])
+            for x in range(18, 21):
+                print(x, vgg_pretrained_features[x])
+                self.mid4.add_module(str(x), vgg_pretrained_features[x])
+            for x in range(21, 23):
+                print(x, vgg_pretrained_features[x])
+                self.mid5.add_module(str(x), vgg_pretrained_features[x])
+            for x in range(23, 25):
+                print(x, vgg_pretrained_features[x])
+                self.mid6.add_module(str(x), vgg_pretrained_features[x])
+            print('--- TAKING PLN LAYERS 12 to 16 (DEEP) ---')
+            for x in range(25, 27):
+                print(x, vgg_pretrained_features[x])
+                self.deep1.add_module(str(x), vgg_pretrained_features[x])
+            for x in range(27, 30):
+                print(x, vgg_pretrained_features[x])
+                self.deep2.add_module(str(x), vgg_pretrained_features[x])
+            for x in range(30, 32):
+                print(x, vgg_pretrained_features[x])
+                self.deep3.add_module(str(x), vgg_pretrained_features[x])
+            for x in range(32, 34):
+                print(x, vgg_pretrained_features[x])
+                self.deep4.add_module(str(x), vgg_pretrained_features[x])
+            for x in range(34, 37):
+                print(x, vgg_pretrained_features[x])
+                self.deep5.add_module(str(x), vgg_pretrained_features[x])
+        elif opt.pln == 'efficientnet_b3':
+            print('--- TAKING UP TO PLN SEQUENTIAL LAYER 2 (SHALLOW) ---')
+            for x in range(3):
+                print(x, vgg_pretrained_features[x])
+                self.shallow.add_module(str(x), vgg_pretrained_features[x])
+            print('--- TAKING PLN SEQUENTIAL LAYERS 3 TO 5 (MID) ---')
+            for x in range(3, 6):
+                print(x, vgg_pretrained_features[x])
+                self.mid.add_module(str(x), vgg_pretrained_features[x])
+            print('--- TAKING PLN SEQUENTIAL LAYERS 6 TO 8 (DEEP) ---')
+            for x in range(6, 9):
+                print(x, vgg_pretrained_features[x])
+                self.deep.add_module(str(x), vgg_pretrained_features[x])
+        
+        if not requires_grad:
+            print('------------------ PLN PARAMETERS ONLY ------------------')
+            count = 0
+            for name, param in self.named_parameters():
+                print(count, name)
+                count = count + 1
+                param.requires_grad = False
+
+    def forward(self, X, opt):
+        out = []
+        if opt.plf_layers == 'SHALLOW':
+            h_relu_shallow1 = self.shallow1(X)
+            h_relu_shallow2 = self.shallow2(h_relu_shallow1)
+            h_relu_shallow3 = self.shallow3(h_relu_shallow2)
+            h_relu_shallow4 = self.shallow4(h_relu_shallow3)
+            h_relu_shallow5 = self.shallow5(h_relu_shallow4)
+            out = [h_relu_shallow1, h_relu_shallow2, h_relu_shallow3, h_relu_shallow4, h_relu_shallow5]
+        if opt.plf_layers == 'MID':
+            h_relu_shallow1 = self.shallow1(X)
+            h_relu_shallow2 = self.shallow2(h_relu_shallow1)
+            h_relu_shallow3 = self.shallow3(h_relu_shallow2)
+            h_relu_shallow4 = self.shallow4(h_relu_shallow3)
+            h_relu_shallow5 = self.shallow5(h_relu_shallow4)
+            h_relu_mid1 = self.mid1(h_relu_shallow5)
+            h_relu_mid2 = self.mid2(h_relu_mid1)
+            h_relu_mid3 = self.mid3(h_relu_mid2)
+            h_relu_mid4 = self.mid4(h_relu_mid3)
+            h_relu_mid5 = self.mid5(h_relu_mid4)
+            h_relu_mid6 = self.mid6(h_relu_mid5)
+            out = [h_relu_mid1, h_relu_mid2, h_relu_mid3, h_relu_mid4, h_relu_mid5, h_relu_mid6]
+        if opt.plf_layers == 'DEEP':
+            h_relu_shallow1 = self.shallow1(X)
+            h_relu_shallow2 = self.shallow2(h_relu_shallow1)
+            h_relu_shallow3 = self.shallow3(h_relu_shallow2)
+            h_relu_shallow4 = self.shallow4(h_relu_shallow3)
+            h_relu_shallow5 = self.shallow5(h_relu_shallow4)
+            h_relu_mid1 = self.mid1(h_relu_shallow5)
+            h_relu_mid2 = self.mid2(h_relu_mid1)
+            h_relu_mid3 = self.mid3(h_relu_mid2)
+            h_relu_mid4 = self.mid4(h_relu_mid3)
+            h_relu_mid5 = self.mid5(h_relu_mid4)
+            h_relu_mid6 = self.mid6(h_relu_mid5)
+            h_relu_deep1 = self.deep1(h_relu_mid6)
+            h_relu_deep2 = self.deep2(h_relu_deep1)
+            h_relu_deep3 = self.deep3(h_relu_deep2)
+            h_relu_deep4 = self.deep4(h_relu_deep3)
+            h_relu_deep5 = self.deep5(h_relu_deep4)
+            out = [h_relu_deep1, h_relu_deep2, h_relu_deep3, h_relu_deep4, h_relu_deep5]
+        if opt.plf_layers == 'ALL':        
+            h_relu_shallow1 = self.shallow1(X)
+            h_relu_shallow2 = self.shallow2(h_relu_shallow1)
+            h_relu_shallow3 = self.shallow3(h_relu_shallow2)
+            h_relu_shallow4 = self.shallow4(h_relu_shallow3)
+            h_relu_shallow5 = self.shallow5(h_relu_shallow4)
+            h_relu_mid1 = self.mid1(h_relu_shallow5)
+            h_relu_mid2 = self.mid2(h_relu_mid1)
+            h_relu_mid3 = self.mid3(h_relu_mid2)
+            h_relu_mid4 = self.mid4(h_relu_mid3)
+            h_relu_mid5 = self.mid5(h_relu_mid4)
+            h_relu_mid6 = self.mid6(h_relu_mid5)
+            h_relu_deep1 = self.deep1(h_relu_mid6)
+            h_relu_deep2 = self.deep2(h_relu_deep1)
+            h_relu_deep3 = self.deep3(h_relu_deep2)
+            h_relu_deep4 = self.deep4(h_relu_deep3)
+            h_relu_deep5 = self.deep5(h_relu_deep4)
+            out = [h_relu_shallow1, h_relu_shallow2, h_relu_shallow3, h_relu_shallow4, h_relu_shallow5, h_relu_mid1, h_relu_mid2, h_relu_mid3, h_relu_mid4, h_relu_mid5, h_relu_mid6, h_relu_deep1, h_relu_deep2, h_relu_deep3, h_relu_deep4, h_relu_deep5]        
+        return out
+
 class VGGLoss_default(nn.Module):
     def __init__(self, opt, layids = None):
         super(VGGLoss_default, self).__init__()
@@ -589,7 +800,40 @@ class VGGLoss(nn.Module):
         
         self.vgg.cuda()
         self.criterion = nn.L1Loss()
-        self.weights = [1.0/32, 1.0/16, 1.0/8, 1.0/4, 1.0]
+        #self.weights = [1.0/32, 1.0/16, 1.0/8, 1.0/4, 1.0]
+        self.weights = [1.0, 1.0, 1.0, 1.0, 1.0]
+        self.layids = layids
+
+    def forward(self, x, y, opt):
+        x_vgg, y_vgg = None, None
+
+        if opt.plf_layers == 'DEFAULT':
+            x_vgg, y_vgg = self.vgg(x), self.vgg(y)
+        else:
+            x_vgg, y_vgg = self.vgg(x, opt), self.vgg(y, opt)
+
+        loss = 0
+        if self.layids is None:
+            self.layids = list(range(len(x_vgg)))
+        #print(self.layids)
+        for i in self.layids:
+            loss += self.weights[i] * self.criterion(x_vgg[i], y_vgg[i].detach())
+        return loss
+
+class VGGLoss_new(nn.Module):
+    def __init__(self, opt, layids = None):
+        super(VGGLoss_new, self).__init__()
+
+        self.vgg = None
+        if opt.plf_layers == 'DEFAULT':
+            self.vgg = Vgg19_default(opt)
+        else:
+            self.vgg = Vgg19_new(opt)
+        
+        self.vgg.cuda()
+        self.criterion = nn.L1Loss()
+        #self.weights = [1.0/32, 1.0/16, 1.0/8, 1.0/4, 1.0]
+        self.weights = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
         self.layids = layids
 
     def forward(self, x, y, opt):
@@ -643,6 +887,8 @@ def save_checkpoint(model, save_path):
     model.cuda()
 
 def load_checkpoint(model, checkpoint_path):
+    print('loading check')
+    print(checkpoint_path)
     if not os.path.exists(checkpoint_path):
         return
     model.load_state_dict(torch.load(checkpoint_path))

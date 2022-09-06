@@ -7,7 +7,7 @@ import argparse
 import os
 import time
 from cp_dataset import CPDataset, CPDataLoader
-from networks import GMM, UnetGenerator, VGGLoss, load_checkpoint, save_checkpoint
+from networks import GMM, UnetGenerator, VGGLoss, VGGLoss_new, load_checkpoint, save_checkpoint
 
 from torch.utils.tensorboard import SummaryWriter
 from visualization import board_add_image, board_add_images
@@ -180,6 +180,7 @@ def train_tom(opt, train_loader, model, board):
     # criterion
     criterionL1 = nn.L1Loss()
     criterionVGG = VGGLoss(opt)
+    #criterionVGG = VGGLoss_new(opt)
     criterionMask = nn.L1Loss()
     
     # optimizer
@@ -287,8 +288,11 @@ def main():
         #print('Model details:')
         #summary(model, input_size=(opt.batch_size, 22, 192, 256), row_settings=("depth", "ascii_only"))
 
-        if not opt.checkpoint =='' and os.path.exists(opt.checkpoint):
-            load_checkpoint(model, opt.checkpoint)
+        checkpoint_path = os.path.join(opt.checkpoint_dir, opt.checkpoint)
+        print(checkpoint_path)
+        if not opt.checkpoint == '' and os.path.exists(checkpoint_path):
+            print(checkpoint_path)
+            load_checkpoint(model, checkpoint_path)
         train_tom(opt, train_loader, model, board)
         save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'tom_final.pth'))
     else:

@@ -1,0 +1,142 @@
+Starting experiment! Time taken will be outputted after execution.
+
+Namespace(batch_size=4, checkpoint='TOM_train_baseline_id1_finetuneNONE_layersALL_efficientnet_b3_viton_warpedclothes1/step_100000.pth', checkpoint_dir='/var/scratch/jbo480/vton/repos/cp-vton/checkpoints', data_list='train_pairs.txt', datamode='train', dataroot='../../datasets/viton_quick', dataset='viton_quick', decay_step=50, display_count=20, fin='NONE', fine_height=256, fine_width=192, gpu_ids='', grid_size=5, keep_step=50, lr=0.0001, name='TOM_train_baselinerelevant_id1_finetuneNONE_layersALL_vgg19_viton_quick_warpedclothes1', plf_layers='ALL', pln='vgg19', pln_path=None, pretrained=True, radius=5, rel='baseline', result_dir='result', save_count=10, shuffle=True, stage='TOM', tensorboard_dir='tensorboard', warp_dir='viton_warpedclothes1_gmm_final.pth', workers=4)
+Start to train stage: TOM, named: TOM_train_baselinerelevant_id1_finetuneNONE_layersALL_vgg19_viton_quick_warpedclothes1!
+wandb: Currently logged in as: mesllo. Use `wandb login --relogin` to force relogin
+/var/scratch/jbo480/vton/repos/cp-vton/checkpoints/TOM_train_baseline_id1_finetuneNONE_layersALL_efficientnet_b3_viton_warpedclothes1/step_100000.pth
+/var/scratch/jbo480/vton/repos/cp-vton/checkpoints/TOM_train_baseline_id1_finetuneNONE_layersALL_efficientnet_b3_viton_warpedclothes1/step_100000.pth
+loading check
+/var/scratch/jbo480/vton/repos/cp-vton/checkpoints/TOM_train_baseline_id1_finetuneNONE_layersALL_efficientnet_b3_viton_warpedclothes1/step_100000.pth
+wandb: wandb version 0.13.2 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.12.20
+wandb: Run data is saved locally in /home/jbo480/vton/repos/cp-vton/wandb/run-20220905_133633-3tkoytvm
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run earthy-puddle-404
+wandb: ⭐️ View project at https://wandb.ai/mesllo/CP-VTON%20-%20Finetuned%20PLN
+wandb: 🚀 View run at https://wandb.ai/mesllo/CP-VTON%20-%20Finetuned%20PLN/runs/3tkoytvm
+USING vgg19
+USING CUSTOM LAYER CHOICES FOR PERCEPTUAL LOSS
+USING DEFAULT PRETRAINED PLN
+--- TAKING UP TO PLN LAYER 5 (SHALLOW) ---
+0 Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+1 ReLU(inplace=True)
+2 Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+3 ReLU(inplace=True)
+4 MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+5 Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+6 ReLU(inplace=True)
+7 Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+8 ReLU(inplace=True)
+9 MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+10 Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+11 ReLU(inplace=True)
+--- TAKING PLN LAYERS 6 to 11 (MID) ---
+12 Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+13 ReLU(inplace=True)
+14 Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+15 ReLU(inplace=True)
+16 Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+17 ReLU(inplace=True)
+18 MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+19 Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+20 ReLU(inplace=True)
+21 Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+22 ReLU(inplace=True)
+23 Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+24 ReLU(inplace=True)
+--- TAKING PLN LAYERS 12 to 16 (DEEP) ---
+25 Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+26 ReLU(inplace=True)
+27 MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+28 Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+29 ReLU(inplace=True)
+30 Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+31 ReLU(inplace=True)
+32 Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+33 ReLU(inplace=True)
+34 Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+35 ReLU(inplace=True)
+36 MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+------------------ PLN PARAMETERS ONLY ------------------
+0 shallow.0.weight
+1 shallow.0.bias
+2 shallow.2.weight
+3 shallow.2.bias
+4 shallow.5.weight
+5 shallow.5.bias
+6 shallow.7.weight
+7 shallow.7.bias
+8 shallow.10.weight
+9 shallow.10.bias
+10 mid.12.weight
+11 mid.12.bias
+12 mid.14.weight
+13 mid.14.bias
+14 mid.16.weight
+15 mid.16.bias
+16 mid.19.weight
+17 mid.19.bias
+18 mid.21.weight
+19 mid.21.bias
+20 mid.23.weight
+21 mid.23.bias
+22 deep.25.weight
+23 deep.25.bias
+24 deep.28.weight
+25 deep.28.bias
+26 deep.30.weight
+27 deep.30.bias
+28 deep.32.weight
+29 deep.32.bias
+30 deep.34.weight
+31 deep.34.bias
+/home/jbo480/miniconda3/envs/vton37/lib/python3.7/site-packages/torch/nn/functional.py:1933: UserWarning: nn.functional.tanh is deprecated. Use torch.tanh instead.
+  warnings.warn("nn.functional.tanh is deprecated. Use torch.tanh instead.")
+/home/jbo480/miniconda3/envs/vton37/lib/python3.7/site-packages/torch/nn/functional.py:1944: UserWarning: nn.functional.sigmoid is deprecated. Use torch.sigmoid instead.
+  warnings.warn("nn.functional.sigmoid is deprecated. Use torch.sigmoid instead.")
+[34m[1mwandb[0m: [33mWARNING[0m Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+step:       20, time: 0.283, loss: 1.1453, l1: 0.1154, vgg: 0.6629, mask: 0.3671
+[34m[1mwandb[0m: [33mWARNING[0m Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+[34m[1mwandb[0m: [33mWARNING[0m Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+step:       40, time: 0.301, loss: 1.1502, l1: 0.1174, vgg: 0.6305, mask: 0.4023
+[34m[1mwandb[0m: [33mWARNING[0m Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+[34m[1mwandb[0m: [33mWARNING[0m Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+step:       60, time: 0.302, loss: 1.1468, l1: 0.1193, vgg: 0.6838, mask: 0.3437
+[34m[1mwandb[0m: [33mWARNING[0m Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+[34m[1mwandb[0m: [33mWARNING[0m Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+step:       80, time: 0.275, loss: 1.1159, l1: 0.1051, vgg: 0.6419, mask: 0.3689
+[34m[1mwandb[0m: [33mWARNING[0m Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+[34m[1mwandb[0m: [33mWARNING[0m Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+step:      100, time: 0.287, loss: 1.0164, l1: 0.0913, vgg: 0.5497, mask: 0.3754
+[34m[1mwandb[0m: [33mWARNING[0m Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+[34m[1mwandb[0m: [33mWARNING[0m Saving files without folders. If you want to preserve sub directories pass base_path to wandb.save, i.e. wandb.save("/mnt/folder/file.h5", base_path="/mnt")
+Finished training TOM, nameed: TOM_train_baselinerelevant_id1_finetuneNONE_layersALL_vgg19_viton_quick_warpedclothes1!
+wandb: Waiting for W&B process to finish... (success).
+wandb: - 899.464 MB of 899.464 MB uploaded (0.000 MB deduped)wandb: \ 899.464 MB of 899.464 MB uploaded (0.000 MB deduped)wandb: | 899.464 MB of 899.478 MB uploaded (0.000 MB deduped)wandb: / 899.464 MB of 899.478 MB uploaded (0.000 MB deduped)wandb: - 899.478 MB of 899.478 MB uploaded (0.000 MB deduped)wandb: \ 899.478 MB of 899.478 MB uploaded (0.000 MB deduped)wandb: | 899.478 MB of 899.478 MB uploaded (0.000 MB deduped)wandb: / 899.478 MB of 899.478 MB uploaded (0.000 MB deduped)wandb: - 899.478 MB of 899.478 MB uploaded (0.000 MB deduped)wandb: \ 899.478 MB of 899.478 MB uploaded (0.000 MB deduped)wandb: | 899.478 MB of 899.478 MB uploaded (0.000 MB deduped)wandb:                                                                                
+wandb: 
+wandb: Run history:
+wandb:       L1_loss ▇██▄▁
+wandb:   MaskL1_loss ▄█▁▄▅
+wandb:      VGG_loss ▇▅█▆▁
+wandb:         epoch ▁▃▅▆█
+wandb:          step ▁▃▅▆█
+wandb: training_loss ███▆▁
+wandb: 
+wandb: Run summary:
+wandb:       L1_loss 0.09129
+wandb:   MaskL1_loss 0.37544
+wandb:      VGG_loss 0.54966
+wandb:         epoch 5
+wandb:          step 100
+wandb: training_loss 1.01639
+wandb: 
+wandb: Synced earthy-puddle-404: https://wandb.ai/mesllo/CP-VTON%20-%20Finetuned%20PLN/runs/3tkoytvm
+wandb: Synced 6 W&B file(s), 45 media file(s), 0 artifact file(s) and 11 other file(s)
+wandb: Find logs at: ./wandb/run-20220905_133633-3tkoytvm/logs
+
+real	0m59.348s
+user	0m55.502s
+sys	0m28.087s
+
+Job done!
